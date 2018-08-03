@@ -1,6 +1,6 @@
 (ns re-chain.core
-  (:require [re-frame.core :as rf]
-            [clojure.walk :as walk]
+  (:require [clojure.walk :as walk]
+            [re-frame.core :as rf]
             #?(:cljs [cljs.spec.alpha :as s]
                :clj  [clojure.spec.alpha :as s])
             [expound.alpha :as e]))
@@ -9,22 +9,23 @@
 (s/def ::chain-handlers (s/* ::chain-handler))
 (s/def ::named-chain-handlers (s/* (s/cat :id keyword? :event-handler ::chain-handler)))
 
-(def default-links [{:effect-present? (fn [effects] (:http-xhrio effects))
-                     :get-dispatch    (fn [effects] (get-in effects [:http-xhrio :on-success]))
-                     :set-dispatch    (fn [effects dispatch] (assoc-in effects [:http-xhrio :on-success] dispatch))}])
-
-(def links (atom default-links))
+(def links (atom []))
 
 (defn step-id [event-id counter]
   (if (= 0 counter)
     event-id
     (keyword
-      (str (namespace event-id) (if (namespace event-id) "/") (name event-id) "-" counter))))
+      (str (namespace event-id)
+           (if (namespace event-id) "/")
+           (name event-id)
+           "-" counter))))
 
 (defn replace-pointers [next-event effects]
   (walk/postwalk
     (fn [x]
-      (if (= x :kee-frame.core/next)
+      (when (= x :kee-frame.core/next)
+        (rf/console :warn "Keyword :kee-frame.core/next is deprecated, use :chain/next instead."))
+      (if (#{:kee-frame.core/next :chain/next} x)
         next-event
         x))
     effects))
@@ -118,22 +119,27 @@
                            :interceptors  interceptors
                            :interceptor   (chain-interceptor id next-id)}))))))
 
-(defn register-chain-handlers! [instructions kee-frame-interceptors]
+(defn register-chain-handlers! [instructions user-interceptors]
   (doseq [{:keys [id event-handler interceptor interceptors]} instructions]
-    (rf/reg-event-fx id (into [interceptor] (concat kee-frame-interceptors interceptors)) event-handler)))
+    (rf/reg-event-fx id (into [interceptor] (concat user-interceptors interceptors)) event-handler)))
 
-(defn reg-chain-named* [interceptors & step-fns]
+(defn reg-chain-named*
+  "Same as `reg-chain-named`, but with a vector of interceptors as the first parameter. The interceptors specified
+  will be appended to each event's interceptors."
+  [interceptors & step-fns]
   (let [instructions (collect-named-event-instructions step-fns)]
     (register-chain-handlers! instructions interceptors)))
 
-(defn reg-chain* [id interceptors & step-fns]
+(defn reg-chain*
+  "Same as `reg-chain`, but with a vector of interceptors as the second parameter. The interceptors specified
+  will be appended to each event's interceptors."
+  [id interceptors & step-fns]
   (let [instructions (collect-event-instructions id step-fns)]
     (register-chain-handlers! instructions interceptors)))
 
-(defn add-configuration! [chain-links]
-  (swap! links concat chain-links))
-
-(defn reset-configuration! [chain-links]
+(defn configure!
+  "TODO: Definitely want to doc this"
+  [chain-links]
   (reset! links chain-links))
 
 (defn reg-chain-named
@@ -174,7 +180,7 @@
   `id`: the id of the first re-frame event. The next events in the chain will get the same id followed by an index, so
   if your id is `add-todo`, the next one in chain will be called `add-todo-1`.
 
-  `handlers`: re-frame event handler functions, registered with `kee-frame.core/reg-event-fx`.
+  `handlers`: re-frame event handler functions, registered with `re-frame.core/reg-event-fx`.
 
 
   Usage:

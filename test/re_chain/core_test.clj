@@ -6,6 +6,10 @@
             [re-frame.interceptor :refer [->interceptor]])
   (:import (clojure.lang ExceptionInfo)))
 
+(def default-links [{:effect-present? (fn [effects] (:http-xhrio effects))
+                     :get-dispatch    (fn [effects] (get-in effects [:http-xhrio :on-success]))
+                     :set-dispatch    (fn [effects dispatch] (assoc-in effects [:http-xhrio :on-success] dispatch))}])
+
 (defn insert-marker [m]
   (->interceptor
     :id :insert-marker
@@ -19,7 +23,7 @@
     (is (= :keyw-2 (chain/step-id :keyw 2)))))
 
 (deftest interceptors
-  (chain/reset-configuration! chain/default-links)
+  (chain/configure! default-links)
 
   (testing "Inserts dispatch to next"
     (is (= {:dispatch [:next]}
@@ -86,7 +90,7 @@
   (testing "Wrong order of interceptors"
     (is (thrown-with-msg? ExceptionInfo #"Invalid chain"
                           (chain/collect-event-instructions :my/chain
-                                                            [[rf/debug][rf/debug]]))))
+                                                            [[rf/debug] [rf/debug]]))))
 
   (testing "Named chain"
     (let [instructions (chain/collect-named-event-instructions
@@ -112,12 +116,12 @@
   (testing "Custom chain links"
 
     (rf-test/run-test-sync
-      (chain/reset-configuration! custom-chain-links)
+      (chain/configure! custom-chain-links)
       (rf/reg-fx :my-custom-effect (fn [config] (rf/dispatch (:got-it config))))
       (rf/reg-sub :test-prop :test-prop)
       (chain/reg-chain :test-event
-                   (fn [_ _] {:my-custom-effect {}})
-                   (fn [_ _] {:db {:test-prop 2}}))
+                       (fn [_ _] {:my-custom-effect {}})
+                       (fn [_ _] {:db {:test-prop 2}}))
       (rf/dispatch [:test-event])
       (is (= 2 @(rf/subscribe [:test-prop])))))
 
