@@ -5,9 +5,14 @@
                :clj  [clojure.spec.alpha :as s])
             [expound.alpha :as e]))
 
-(s/def ::chain-handler (s/cat :interceptors (s/? vector?) :fn fn?))
-(s/def ::chain-handlers (s/* ::chain-handler))
-(s/def ::named-chain-handlers (s/* (s/cat :id keyword? :event-handler ::chain-handler)))
+(s/def ::handler (s/cat :interceptors (s/? vector?) :fn fn?))
+(s/def ::handlers (s/* ::handler))
+(s/def ::named-handlers (s/* (s/cat :id keyword? :event-handler ::handler)))
+(s/def ::effect-present? fn?)
+(s/def ::get-dispatch fn?)
+(s/def ::set-dispatch fn?)
+(s/def ::link (s/keys :req-un [::effect-present? ::get-dispatch ::set-dispatch]))
+(s/def ::links (s/nilable (s/coll-of ::link)))
 
 (def links (atom []))
 
@@ -89,10 +94,10 @@
     :after (effect-postprocessor next-event-id)))
 
 (defn collect-named-event-instructions [step-fns]
-  (let [chain-handlers (s/conform ::named-chain-handlers step-fns)]
+  (let [chain-handlers (s/conform ::named-handlers step-fns)]
     (when (= ::s/invalid chain-handlers)
-      (e/expound ::named-chain-handlers step-fns)
-      (throw (ex-info "Invalid named chain. Should be pairs of keyword and handler" (s/explain-data ::named-chain-handlers step-fns))))
+      (e/expound ::named-handlers step-fns)
+      (throw (ex-info "Invalid named chain. Should be pairs of keyword and handler" (s/explain-data ::named-handlers step-fns))))
     (->> chain-handlers
          (partition 2 1 [nil])
          (map (fn [[{:keys [id event-handler] :as handler-1} handler-2]]
@@ -103,10 +108,10 @@
                                    :interceptor (chain-interceptor id next-id))))))))
 
 (defn collect-event-instructions [key step-fns]
-  (let [chain-handlers (s/conform ::chain-handlers step-fns)]
+  (let [chain-handlers (s/conform ::handlers step-fns)]
     (when (= ::s/invalid chain-handlers)
-      (e/expound ::chain-handlers step-fns)
-      (throw (ex-info "Invalid chain. Should be functions or pairs of interceptor and function" (s/explain-data ::chain-handlers step-fns))))
+      (e/expound ::handlers step-fns)
+      (throw (ex-info "Invalid chain. Should be functions or pairs of interceptor and function" (s/explain-data ::handlers step-fns))))
     (->> chain-handlers
          (partition 2 1 [nil])
          (map-indexed (fn [counter [current-handler next-handler]]
