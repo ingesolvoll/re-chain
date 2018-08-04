@@ -10,7 +10,7 @@ Event chains for [re-frame](https://github.com/Day8/re-frame)
 ## Getting started
 Add the leiningen dependency:
 ```clojure
-[re-chain "0.1.0-SNAPSHOT"]
+[re-chain "1.0"]
 ```
 
 Require core namespace:
