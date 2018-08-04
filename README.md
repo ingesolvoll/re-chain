@@ -65,7 +65,7 @@ Every parameter received through the chain is passed on to the next step. So the
 
 You are allowed to dispatch out of chain, but there must always be a "slot" available for the chain to put its next dispatch.
 
-You can specify your dispatch explicitly using a special keyword as your event id, like this: `{:on-success [:kee-frame.core/next 1 2 3]}`. The keyword will be replaced by a generated id for the next in chain. 
+You can specify your dispatch explicitly using a special keyword as your event id, like this: `{:on-success [:chain/next 1 2 3]}`. The keyword will be replaced by a generated id for the next in chain. 
 
 ## But I want to decide the name of my events!
 
