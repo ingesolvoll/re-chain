@@ -2,9 +2,9 @@
 
 Event chains for [re-frame](https://github.com/Day8/re-frame)
 
-[![Build Status](https://travis-ci.org/ingesolvoll/re-chain.svg?branch=master)](https://travis-ci.org/ingesolvoll/kee-frame)
+[![Build Status](https://travis-ci.org/ingesolvoll/re-chain.svg?branch=master)](https://travis-ci.org/ingesolvoll/re-chain)
 
-[![Clojars Project](https://img.shields.io/clojars/v/re-chain.svg)](https://clojars.org/kee-frame)
+[![Clojars Project](https://img.shields.io/clojars/v/re-chain.svg)](https://clojars.org/re-chain)
 
 
 ## Getting started
