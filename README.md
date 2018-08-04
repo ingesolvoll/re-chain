@@ -69,7 +69,7 @@ You can specify your dispatch explicitly using a special keyword as your event i
 
 ## But I want to decide the name of my events!
 
-Sometimes you may want to specify your event names, to ease debugging or readability. In that case, use the `kee-frame.core/reg-chain-named`, like this: 
+Sometimes you may want to specify your event names, to ease debugging or readability. In that case, use the `reg-chain-named`, like this: 
 
 ```clojure
 (reg-chain-named :first-id 
