@@ -143,7 +143,24 @@
     (register-chain-handlers! instructions interceptors)))
 
 (defn configure!
-  "TODO: Definitely want to doc this"
+  "re-chain only supports the `dispatch` effect out of the box. To add more effects, call this function at the startup
+  of your app.
+
+  Parameters:
+
+  `chain-links`: Vector of maps. Each map describes how to chain together events using a certain effect. The map should
+  contain 3 keys:
+  - `:effect-present?` : Is the effect present in the effects map returned from an event function?
+  - `:get-dispatch` : Try to lookup the dispatch value from the effects map
+  - `:set-dispatch` : Set the dispatch value in the effects map
+
+  Usage:
+  ```
+  (chain/configure! [{:effect-present? (fn [effects] (:http-xhrio effects))
+                      :get-dispatch    (fn [effects] (get-in effects [:http-xhrio :on-success]))
+                      :set-dispatch    (fn [effects dispatch] (assoc-in effects [:http-xhrio :on-success] dispatch))}])
+  ```
+  "
   [chain-links]
   (reset! links chain-links))
 
