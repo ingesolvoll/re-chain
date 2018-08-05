@@ -19,6 +19,8 @@ Require core namespace:
 (require '[re-chain.core :as chain :refer [reg-chain reg-chain-named]])
 ```
 
+> The following examples assume that you have configured re-chain to recognize effects from [re-frame-http-fx](https://github.com/Day8/re-frame-http-fx). See the configuration section at the bottom.
+
 ## The problem
 
 One very common pattern in re-frame is to register 2 events, one for doing a side effect like HTTP, one for handling the response data. Sometimes you need more than 2 events. Creating these event chains is boring and verbose, and you easily lose track of the flow. See an example below:
