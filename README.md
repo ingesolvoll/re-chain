@@ -6,6 +6,9 @@ Event chains for [re-frame](https://github.com/Day8/re-frame)
 
 [![Clojars Project](https://img.shields.io/clojars/v/re-chain.svg)](https://clojars.org/re-chain)
 
+[![cljdoc badge](https://cljdoc.xyz/badge/re-chain/re-chain)](https://cljdoc.xyz/d/re-chain/re-chain/CURRENT)
+
+
 
 ## Getting started
 Add the leiningen dependency:
