@@ -34,6 +34,7 @@ One very common pattern in re-frame is to register 2 events, one for doing a sid
                         {:http-xhrio {:method          :post
                                       :uri             "/customers"
                                       :body            customer-data
+                                      :on-failure      [:failure-event-handler]
                                       :on-success      [:customer-added]}}))
 
 (re-frame/reg-event-db :customer-added
@@ -55,6 +56,7 @@ Through the magic of re-frame `interceptors`, we are able to chain together even
             (fn [_ [customer]]
               {:http-xhrio {:method          :post
                             :uri             "/customers"
+                            :on-failure      [:failure-event-handler]
                             :body            customer-data}})
             
             (fn [{:keys [db]} [_ added-customer]] ;; Remember: No DB functions, only FX.
