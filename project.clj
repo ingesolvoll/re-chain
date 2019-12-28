@@ -4,14 +4,13 @@
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :url "https://github.com/ingesolvoll/re-chain"
   :min-lein-version "2.0.0"
-  :dependencies [[org.clojure/clojure "1.9.0"]
-                 [org.clojure/clojurescript "1.10.312"]
-                 [re-frame "0.10.5"]                
-                 [expound "0.7.0"]
+  :dependencies [[org.clojure/clojure "1.10.0"]
+                 [org.clojure/clojurescript "1.10.597"]
+                 [re-frame "0.10.6"]
+                 [expound "0.8.2"]
                  [day8.re-frame/test "0.1.5"]]
 
-  :plugins [[com.jakemccrary/lein-test-refresh "0.20.0"]
-            [venantius/ultra "0.5.2"]]
+  :plugins [[com.jakemccrary/lein-test-refresh "0.20.0"]]
   :deploy-repositories [["clojars" {:sign-releases false
                                     :url           "https://clojars.org/repo"
                                     :username      :env/clojars_username

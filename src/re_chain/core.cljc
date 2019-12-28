@@ -1,8 +1,7 @@
 (ns re-chain.core
   (:require [clojure.walk :as walk]
             [re-frame.core :as rf]
-            #?(:cljs [cljs.spec.alpha :as s]
-               :clj  [clojure.spec.alpha :as s])
+            [clojure.spec.alpha :as s]
             [expound.alpha :as e]))
 
 (s/def ::handler (s/cat :interceptors (s/? vector?) :fn fn?))
