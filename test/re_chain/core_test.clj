@@ -10,11 +10,18 @@
                      :get-dispatch    (fn [effects] (get-in effects [:http-xhrio :on-success]))
                      :set-dispatch    (fn [effects dispatch] (assoc-in effects [:http-xhrio :on-success] dispatch))}])
 
+(defn increment [n]
+  (->interceptor
+   :id :increment
+   :after (fn [context]
+            (swap! n inc)
+            context)))
+
 (defn insert-marker [m]
   (->interceptor
-    :id :insert-marker
-    :after (fn [context]
-             (assoc-in context [:effects :db :marker] m))))
+   :id :insert-marker
+   :after (fn [context]
+            (assoc-in context [:effects :db :marker] m))))
 
 (deftest utils
   (testing "Can produce next step id with namespaced keyword"
@@ -94,18 +101,18 @@
 
   (testing "Named chain"
     (let [instructions (chain/collect-named-event-instructions
-                         [:step-1
-                          identity
-                          :step-2
-                          identity])]
+                        [:step-1
+                         identity
+                         :step-2
+                         identity])]
       (is (= [:step-1 :step-2]
              (map :id instructions)))))
 
   (testing "Bad named chain gives good error message"
     (is (thrown-with-msg? ExceptionInfo #"Invalid named chain"
                           (chain/collect-named-event-instructions
-                            [:step-1
-                             identity
+                           [:step-1
+                            identity
                              :step-2])))))
 
 (def custom-chain-links [{:effect-present? (fn [effects] (:my-custom-effect effects))
@@ -116,36 +123,41 @@
   (testing "Custom chain links"
 
     (rf-test/run-test-sync
-      (chain/configure! custom-chain-links)
-      (rf/reg-fx :my-custom-effect (fn [config] (rf/dispatch (:got-it config))))
-      (rf/reg-sub :test-prop :test-prop)
-      (chain/reg-chain :test-event
-                       (fn [_ _] {:my-custom-effect {}})
-                       (fn [_ _] {:db {:test-prop 2}}))
-      (rf/dispatch [:test-event])
-      (is (= 2 @(rf/subscribe [:test-prop])))))
+     (chain/configure! custom-chain-links)
+     (rf/reg-fx :my-custom-effect (fn [config] (rf/dispatch (:got-it config))))
+     (rf/reg-sub :test-prop :test-prop)
+     (chain/reg-chain :test-event
+                      (fn [_ _] {:my-custom-effect {}})
+                      (fn [_ _] {:db {:test-prop 2}}))
+     (rf/dispatch [:test-event])
+     (is (= 2 @(rf/subscribe [:test-prop])))))
 
   (testing "Named chain with interceptor"
 
     (rf-test/run-test-sync
-      (rf/reg-sub :marker :marker)
-      (chain/reg-chain-named
+     (let [counter     (atom 0)
+           interceptor (->interceptor
+                        :before (fn [context]
+                                  (swap! counter inc)
+                                  context))]
+       (chain/reg-chain-named
         :test-event
+        [interceptor]
         (fn [_ _] {})
         :test-event-step-2
-        [(insert-marker 42)]
+        [interceptor]
         (fn [_ _] nil))
-      (rf/dispatch [:test-event])
-      (is (= 42 @(rf/subscribe [:marker])))))
+       (rf/dispatch [:test-event])
+       (is (= 2 @counter)))))
 
   (testing "Chain with interceptor"
 
     (rf-test/run-test-sync
-      (rf/reg-sub :marker :marker)
-      (chain/reg-chain
-        :test-event
-        (fn [_ _] {})
-        [(insert-marker 43)]
-        (fn [_ _] nil))
-      (rf/dispatch [:test-event])
-      (is (= 43 @(rf/subscribe [:marker]))))))
+     (rf/reg-sub :marker :marker)
+     (chain/reg-chain
+      :test-event
+      (fn [_ _] {})
+      [(insert-marker 43)]
+      (fn [_ _] nil))
+     (rf/dispatch [:test-event])
+     (is (= 43 @(rf/subscribe [:marker]))))))
