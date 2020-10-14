@@ -4,6 +4,8 @@
             [clojure.spec.alpha :as s]
             [expound.alpha :as e]))
 
+(def ^:dynamic *replace-pointers* false)
+
 (s/def ::interceptors (s/or :vector vector? :single map?))
 (s/def ::handler (s/cat :interceptors (s/? ::interceptors) :fn fn?))
 (s/def ::handlers (s/* ::handler))
@@ -89,9 +91,9 @@
 (defn effect-postprocessor [next-event-id]
   (fn [ctx]
     (let [event-params (rest (rf/get-coeffect ctx :event))]
-      (update ctx :effects #(->> %
-                                 (replace-pointers next-event-id)
-                                 (link-effects next-event-id event-params))))))
+      (update ctx :effects #(cond->> %
+                              *replace-pointers* (replace-pointers next-event-id)
+                              true (link-effects next-event-id event-params))))))
 
 (defn chain-interceptor [current-event-id next-event-id]
   (rf/->interceptor

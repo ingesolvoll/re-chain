@@ -40,7 +40,7 @@
 
   (testing "Can use special pointer to next action when explicit params are needed"
     (is (= {:dispatch [:next-event :a :b :c]}
-           (chain/replace-pointers :next-event {:dispatch [:kee-frame.core/next :a :b :c]}))))
+           (chain/replace-pointers :next-event {:dispatch [:chain/next :a :b :c]}))))
 
   (testing "Reports error when on-success or dispatch are specified and none of them point to correct next event"
     (is (thrown? ExceptionInfo
@@ -59,11 +59,15 @@
                ((chain/effect-postprocessor :next-event))
                :effects)))
 
-    (is (= {:dispatch [:next-event 1 2 3 4]}
-           (-> {:coeffects {:event [:previous-event 1 2]}
-                :effects   {:dispatch [:kee-frame.core/next 3 4]}}
-               ((chain/effect-postprocessor :next-event))
-               :effects)))))
+    (let [get-effects (fn [] (-> {:coeffects {:event [:previous-event 1 2]}
+                                  :effects   {:dispatch [:chain/next 3 4]}}
+                                 ((chain/effect-postprocessor :next-event))
+                                 :effects))]
+      (binding [chain/*replace-pointers* true]
+        (is (= {:dispatch [:next-event 1 2 3 4]}
+               (get-effects))))
+      (is (thrown-with-msg? ExceptionInfo #"Not possible to select next in chain"
+             (get-effects))))))
 
 (deftest outer-api
   (testing "Plain chain"
@@ -74,7 +78,7 @@
              (map :id instructions)))))
 
   (testing "Bad chain"
-    (is (thrown-with-msg? ExceptionInfo #""
+    (is (thrown-with-msg? ExceptionInfo #"Invalid chain"
                           (chain/collect-event-instructions :my/chain
                                                             ["string-should-not-be-here"]))))
 
