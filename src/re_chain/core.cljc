@@ -101,7 +101,7 @@
          (partition 2 1 [nil])
          (map (fn [[{:keys [id event-handler] :as handler-1} handler-2]]
                 (let [next-id (:id handler-2)]
-                  (assoc handler-1 :next-id (:id handler-2)
+                  (assoc handler-1 :next-id next-id
                                    :interceptors (:interceptors event-handler)
                                    :event-handler (:fn event-handler)
                                    :interceptor (chain-interceptor id next-id))))))))
@@ -169,7 +169,7 @@
 
   Parameters:
 
-  `handlers`: pairs of id and event handler.
+  `handlers`: pairs of id and event handler. Optionally with interceptors between id and handler.
 
   Usage:
   ```
@@ -201,7 +201,8 @@
   `id`: the id of the first re-frame event. The next events in the chain will get the same id followed by an index, so
   if your id is `add-todo`, the next one in chain will be called `add-todo-1`.
 
-  `handlers`: re-frame event handler functions, registered with `re-frame.core/reg-event-fx`.
+  `handlers`: re-frame event handler functions, registered with `re-frame.core/reg-event-fx`. Interceptors can be
+              specified before the handler, same as with normal event handlers.
 
 
   Usage:
