@@ -84,7 +84,6 @@
                                                          identity])
                       first
                       :interceptors
-                      second
                       first
                       :id))))
 
@@ -146,6 +145,22 @@
         interceptor
         (fn [_ _] nil))
        (rf/dispatch [:test-event])
+       (is (= 2 @counter)))))
+
+  (testing "Named chain with common interceptor"
+
+    (rf-test/run-test-sync
+     (let [counter     (atom 0)
+           interceptor (->interceptor
+                        :before (fn [context]
+                                  (swap! counter inc)
+                                  context))]
+       (chain/reg-chain*
+        :test/event
+        interceptor
+        (fn [_ _] nil)
+        (fn [_ _] nil))
+       (rf/dispatch [:test/event])
        (is (= 2 @counter)))))
 
   (testing "Chain with interceptor"

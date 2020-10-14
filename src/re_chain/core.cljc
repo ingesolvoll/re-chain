@@ -106,9 +106,10 @@
     (->> chain-handlers
          (partition 2 1 [nil])
          (map (fn [[{:keys [id event-handler] :as handler-1} handler-2]]
-                (let [next-id (:id handler-2)]
+                (let [next-id (:id handler-2)
+                      [_ interceptors] (:interceptors event-handler)]
                   (assoc handler-1 :next-id next-id
-                                   :interceptors (:interceptors event-handler)
+                                   :interceptors (some-> interceptors seqify)
                                    :event-handler (:fn event-handler)
                                    :interceptor (chain-interceptor id next-id))))))))
 
@@ -121,8 +122,9 @@
          (partition 2 1 [nil])
          (map-indexed (fn [counter [current-handler next-handler]]
                         (let [{:keys [fn interceptors]} current-handler
-                              id (step-id key counter)
-                              next-id (when next-handler (step-id key (inc counter)))]
+                              id      (step-id key counter)
+                              next-id (when next-handler (step-id key (inc counter)))
+                              [_ interceptors] interceptors]
                           {:id            id
                            :next-id       next-id
                            :event-handler fn
