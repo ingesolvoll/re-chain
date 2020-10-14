@@ -75,7 +75,7 @@ You are allowed to dispatch out of chain, but there must always be a "slot" avai
 You can specify your dispatch explicitly using a special keyword as your event id, like this: `{:on-success [:chain/next 1 2 3]}`. The keyword will be replaced by a generated id for the next in chain. 
 
 ## `:chain/next` feature is default off since version 1.2
-This feature uses clojure walk, which is too slow for some apps. If you need the feature, you need to actively turn it on by setting the var `re-chain.core/*replace-pointers*` to `true`. Unfortunately this is a breaking change for apps already using this feature.
+This feature uses clojure walk, which is too slow for some apps. If you need the feature, you need to actively turn it on by setting the var `re-chain.core/*replace-pointers*` to `true`. Unfortunately this is a breaking change for apps already using this feature. I chose to break the API like this because I suspect this feature is in very limited use.
 
 ## But I want to decide the name of my events!
 
