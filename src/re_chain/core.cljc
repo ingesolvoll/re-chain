@@ -4,7 +4,8 @@
             [clojure.spec.alpha :as s]
             [expound.alpha :as e]))
 
-(s/def ::handler (s/cat :interceptors (s/? vector?) :fn fn?))
+(s/def ::interceptors (s/or :vector vector? :single map?))
+(s/def ::handler (s/cat :interceptors (s/? ::interceptors) :fn fn?))
 (s/def ::handlers (s/* ::handler))
 (s/def ::named-handlers (s/* (s/cat :id keyword? :event-handler ::handler)))
 (s/def ::effect-present? fn?)
@@ -15,14 +16,19 @@
 
 (def links (atom []))
 
+(defn seqify [x]
+  (if (or (sequential? x) (set? x))
+    x
+    [x]))
+
 (defn step-id [event-id counter]
   (if (= 0 counter)
     event-id
     (keyword
-      (str (namespace event-id)
-           (if (namespace event-id) "/")
-           (name event-id)
-           "-" counter))))
+     (str (namespace event-id)
+          (if (namespace event-id) "/")
+          (name event-id)
+          "-" counter))))
 
 (defn replace-pointers [next-event effects]
   (walk/postwalk
@@ -132,14 +138,14 @@
   will be appended to each event's interceptors."
   [interceptors & step-fns]
   (let [instructions (collect-named-event-instructions step-fns)]
-    (register-chain-handlers! instructions interceptors)))
+    (register-chain-handlers! instructions (some-> interceptors seqify))))
 
 (defn reg-chain*
   "Same as `reg-chain`, but with a vector of interceptors as the second parameter. The interceptors specified
   will be appended to each event's interceptors."
   [id interceptors & step-fns]
   (let [instructions (collect-event-instructions id step-fns)]
-    (register-chain-handlers! instructions interceptors)))
+    (register-chain-handlers! instructions (some-> interceptors seqify))))
 
 (defn configure!
   "re-chain only supports the `dispatch` effect out of the box. To add more effects, call this function at the startup

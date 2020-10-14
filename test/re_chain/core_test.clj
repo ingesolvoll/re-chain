@@ -10,13 +10,6 @@
                      :get-dispatch    (fn [effects] (get-in effects [:http-xhrio :on-success]))
                      :set-dispatch    (fn [effects dispatch] (assoc-in effects [:http-xhrio :on-success] dispatch))}])
 
-(defn increment [n]
-  (->interceptor
-   :id :increment
-   :after (fn [context]
-            (swap! n inc)
-            context)))
-
 (defn insert-marker [m]
   (->interceptor
    :id :insert-marker
@@ -91,6 +84,7 @@
                                                          identity])
                       first
                       :interceptors
+                      second
                       first
                       :id))))
 
@@ -98,6 +92,10 @@
     (is (thrown-with-msg? ExceptionInfo #"Invalid chain"
                           (chain/collect-event-instructions :my/chain
                                                             [[rf/debug] [rf/debug]]))))
+
+  (testing "Interceptors outside sequence"
+    (is (= 1 (count (chain/collect-event-instructions :my/chain
+                                                      [rf/debug identity])))))
 
   (testing "Named chain"
     (let [instructions (chain/collect-named-event-instructions
@@ -145,7 +143,7 @@
         [interceptor]
         (fn [_ _] {})
         :test-event-step-2
-        [interceptor]
+        interceptor
         (fn [_ _] nil))
        (rf/dispatch [:test-event])
        (is (= 2 @counter)))))
