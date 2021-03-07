@@ -89,18 +89,18 @@
    :after (effect-postprocessor next-event-id)))
 
 (defn conform-named-handlers [handlers]
-  (loop [[event-key interceptors-or-handler & rest] handlers
+  (loop [[id interceptors-or-handler & rest] handlers
          matches []]
-    (if event-key
+    (if id
       (if (fn? interceptors-or-handler)
-        (recur rest (conj matches {:id event-key
+        (recur rest (conj matches {:id id
                                    :fn interceptors-or-handler}))
         (let [[handler & rest] rest]
           (if (fn? handler)
-            (recur rest (conj matches {:id           event-key
+            (recur rest (conj matches {:id           id
                                        :interceptors interceptors-or-handler
                                        :fn           handler}))
-            (throw (ex-info "No valid handler found for " {:event-key    event-key
+            (throw (ex-info "No valid handler found for " {:id           id
                                                            :interceptors interceptors-or-handler
                                                            :handler      handler})))))
       matches)))
