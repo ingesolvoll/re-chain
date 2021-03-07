@@ -92,7 +92,7 @@
                       :id))))
 
   (testing "Wrong order of interceptors"
-    (is (thrown-with-msg? ExceptionInfo #"Invalid handler"
+    (is (thrown-with-msg? ExceptionInfo #"Interceptor without matching handler"
                           (chain/collect-event-instructions :my/chain
                                                             [[rf/debug] [rf/debug]]))))
 

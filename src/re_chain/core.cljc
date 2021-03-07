@@ -97,10 +97,9 @@
                                    :fn interceptors-or-handler}))
         (let [[handler & rest] rest]
           (if (fn? handler)
-            (do
-              (recur rest (conj matches {:id           event-key
-                                         :interceptors interceptors-or-handler
-                                         :fn           handler})))
+            (recur rest (conj matches {:id           event-key
+                                       :interceptors interceptors-or-handler
+                                       :fn           handler}))
             (throw (ex-info "No valid handler found for " {:event-key    event-key
                                                            :interceptors interceptors-or-handler
                                                            :handler      handler})))))
@@ -118,23 +117,18 @@
                                    :interceptor (chain-interceptor id next-id))))))))
 
 (defn conform-handlers [handlers]
-  (loop [[current & rest] handlers
-         matches      []
-         interceptors nil]
-
-    (if current
-      (if interceptors
-        (if-not (fn? current)
-          (throw (ex-info "Invalid handler, must be fn or pairs of interceptors and fn" {:fn              current
-                                                                                         :current-matches matches}))
-          (recur rest (conj matches {:interceptors interceptors :fn current}) nil))
-        (if (fn? current)
-          (recur rest (conj matches {:interceptors nil :fn current}) nil)
-          (recur rest matches current)))
-      (if interceptors
-        (throw (ex-info "Interceptor without matching handler" {:interceptor     interceptors
-                                                                :current-matches matches}))
-        matches))))
+  (loop [[interceptors-or-handler & rest] handlers
+         matches []]
+    (if interceptors-or-handler
+      (if (fn? interceptors-or-handler)
+        (recur rest (conj matches {:fn interceptors-or-handler}))
+        (let [[handler & rest] rest]
+          (if (fn? handler)
+            (recur rest (conj matches {:interceptors interceptors-or-handler
+                                       :fn           handler}))
+            (throw (ex-info "Interceptor without matching handler" {:interceptors interceptors-or-handler
+                                                                    :handler      handler})))))
+      matches)))
 
 (defn collect-event-instructions [key step-fns]
   (let [chain-handlers (conform-handlers step-fns)]
