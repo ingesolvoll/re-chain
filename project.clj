@@ -1,4 +1,4 @@
-(defproject re-chain "1.3-SNAPSHOT"
+(defproject re-chain "1.3"
   :description "Easy chaining of re-frame events"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
