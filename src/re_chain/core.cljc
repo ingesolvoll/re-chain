@@ -1,20 +1,8 @@
 (ns re-chain.core
   (:require [clojure.walk :as walk]
-            [re-frame.core :as rf]
-            [clojure.spec.alpha :as s]
-            [expound.alpha :as e]))
+            [re-frame.core :as rf]))
 
 (def ^:dynamic *replace-pointers* false)
-
-(s/def ::interceptors (s/or :vector vector? :single map?))
-(s/def ::handler (s/cat :interceptors (s/? ::interceptors) :fn fn?))
-(s/def ::handlers (s/* ::handler))
-(s/def ::named-handlers (s/* (s/cat :id keyword? :event-handler ::handler)))
-(s/def ::effect-present? fn?)
-(s/def ::get-dispatch fn?)
-(s/def ::set-dispatch fn?)
-(s/def ::link (s/keys :req-un [::effect-present? ::get-dispatch ::set-dispatch]))
-(s/def ::links (s/nilable (s/coll-of ::link)))
 
 (def links (atom []))
 
@@ -92,41 +80,70 @@
   (fn [ctx]
     (let [event-params (rest (rf/get-coeffect ctx :event))]
       (update ctx :effects #(cond->> %
-                              *replace-pointers* (replace-pointers next-event-id)
-                              true (link-effects next-event-id event-params))))))
+                                     *replace-pointers* (replace-pointers next-event-id)
+                                     true (link-effects next-event-id event-params))))))
 
 (defn chain-interceptor [current-event-id next-event-id]
   (rf/->interceptor
-    :id current-event-id
-    :after (effect-postprocessor next-event-id)))
+   :id current-event-id
+   :after (effect-postprocessor next-event-id)))
+
+(defn conform-named-handlers [handlers]
+  (loop [[event-key interceptors-or-handler & rest] handlers
+         matches []]
+    (if event-key
+      (if (fn? interceptors-or-handler)
+        (recur rest (conj matches {:id event-key
+                                   :fn interceptors-or-handler}))
+        (let [[handler & rest] rest]
+          (if (fn? handler)
+            (do
+              (recur rest (conj matches {:id           event-key
+                                         :interceptors interceptors-or-handler
+                                         :fn           handler})))
+            (throw (ex-info "No valid handler found for " {:event-key    event-key
+                                                           :interceptors interceptors-or-handler
+                                                           :handler      handler})))))
+      matches)))
 
 (defn collect-named-event-instructions [step-fns]
-  (let [chain-handlers (s/conform ::named-handlers step-fns)]
-    (when (= ::s/invalid chain-handlers)
-      (e/expound ::named-handlers step-fns)
-      (throw (ex-info "Invalid named chain. Should be pairs of keyword and handler" (s/explain-data ::named-handlers step-fns))))
+  (let [chain-handlers (conform-named-handlers step-fns)]
     (->> chain-handlers
          (partition 2 1 [nil])
-         (map (fn [[{:keys [id event-handler] :as handler-1} handler-2]]
-                (let [next-id (:id handler-2)
-                      [_ interceptors] (:interceptors event-handler)]
+         (map (fn [[{:keys [id interceptors] :as handler-1} handler-2]]
+                (let [next-id (:id handler-2)]
                   (assoc handler-1 :next-id next-id
                                    :interceptors (some-> interceptors seqify)
-                                   :event-handler (:fn event-handler)
+                                   :event-handler (:fn handler-1)
                                    :interceptor (chain-interceptor id next-id))))))))
 
+(defn conform-handlers [handlers]
+  (loop [[current & rest] handlers
+         matches      []
+         interceptors nil]
+
+    (if current
+      (if interceptors
+        (if-not (fn? current)
+          (throw (ex-info "Invalid handler, must be fn or pairs of interceptors and fn" {:fn              current
+                                                                                         :current-matches matches}))
+          (recur rest (conj matches {:interceptors interceptors :fn current}) nil))
+        (if (fn? current)
+          (recur rest (conj matches {:interceptors nil :fn current}) nil)
+          (recur rest matches current)))
+      (if interceptors
+        (throw (ex-info "Interceptor without matching handler" {:interceptor     interceptors
+                                                                :current-matches matches}))
+        matches))))
+
 (defn collect-event-instructions [key step-fns]
-  (let [chain-handlers (s/conform ::handlers step-fns)]
-    (when (= ::s/invalid chain-handlers)
-      (e/expound ::handlers step-fns)
-      (throw (ex-info "Invalid chain. Should be functions or pairs of interceptor and function" (s/explain-data ::handlers step-fns))))
+  (let [chain-handlers (conform-handlers step-fns)]
     (->> chain-handlers
          (partition 2 1 [nil])
          (map-indexed (fn [counter [current-handler next-handler]]
                         (let [{:keys [fn interceptors]} current-handler
                               id      (step-id key counter)
-                              next-id (when next-handler (step-id key (inc counter)))
-                              [_ interceptors] interceptors]
+                              next-id (when next-handler (step-id key (inc counter)))]
                           {:id            id
                            :next-id       next-id
                            :event-handler fn

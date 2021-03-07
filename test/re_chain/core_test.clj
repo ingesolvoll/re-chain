@@ -78,7 +78,7 @@
              (map :id instructions)))))
 
   (testing "Bad chain"
-    (is (thrown-with-msg? ExceptionInfo #"Invalid chain"
+    (is (thrown-with-msg? ExceptionInfo #"Interceptor without matching handler"
                           (chain/collect-event-instructions :my/chain
                                                             ["string-should-not-be-here"]))))
 
@@ -92,7 +92,7 @@
                       :id))))
 
   (testing "Wrong order of interceptors"
-    (is (thrown-with-msg? ExceptionInfo #"Invalid chain"
+    (is (thrown-with-msg? ExceptionInfo #"Invalid handler"
                           (chain/collect-event-instructions :my/chain
                                                             [[rf/debug] [rf/debug]]))))
 
@@ -110,7 +110,7 @@
              (map :id instructions)))))
 
   (testing "Bad named chain gives good error message"
-    (is (thrown-with-msg? ExceptionInfo #"Invalid named chain"
+    (is (thrown-with-msg? ExceptionInfo #"No valid handler found for "
                           (chain/collect-named-event-instructions
                            [:step-1
                             identity
