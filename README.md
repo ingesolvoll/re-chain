@@ -74,6 +74,35 @@ You are allowed to dispatch out of chain, but there must always be a "slot" avai
 
 You can specify your dispatch explicitly using a special keyword as your event id, like this: `{:on-success [:chain/next 1 2 3]}`. The keyword will be replaced by a generated id for the next in chain. 
 
+## Interceptors
+
+Events in the chain can have interceptors applied to them in the usual way.
+
+```clojure
+(require 
+ '[re-chain.core :as chain]
+ '[re-frame.core :as rf]
+ '[re-frame.interceptor :refer [->interceptor]])
+
+(defn insert-marker [m]
+  (->interceptor
+   :id :insert-marker
+   :after (fn [context]
+            (assoc-in context [:effects :db :marker] m))))
+            
+(rf/reg-sub :marker :marker)
+
+(chain/reg-chain
+ :test-event
+ (fn [_ _] {})
+  [(insert-marker 43)]
+  (fn [_ _] nil))
+  
+ (rf/dispatch [:test-event])
+ 
+ @(rf/subscribe [:marker]) ;; => 43
+```
+
 ## `:chain/next` feature is default off since version 1.2
 This feature uses clojure walk, which is too slow for some apps. If you need the feature, you need to actively turn it on by setting the var `re-chain.core/*replace-pointers*` to `true`. Unfortunately this is a breaking change for apps already using this feature. I chose to break the API like this because I suspect this feature is in very limited use.
 
